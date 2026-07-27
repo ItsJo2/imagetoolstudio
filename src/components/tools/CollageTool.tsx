@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useImageStore } from '../../store/imageStore';
-import { generateCollageGrid, CollageOptions, ProcessedResult, downloadBlob, createManagedObjectURL } from '../../lib/imageUtils';
+import { generateCollageGrid, computeCollageCells, CollageOptions, ProcessedResult, downloadBlob, createManagedObjectURL } from '../../lib/imageUtils';
 import { SendToMenu } from '../shared/SendToMenu';
 import { LayoutGrid, Download, RefreshCw, Check, ArrowRight, Sparkles, Plus, Trash2, Layers, Sliders, Palette, MoveUp, MoveDown, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -453,24 +453,77 @@ export const CollageTool: React.FC = () => {
         {/* Right Column: Stage & Render Action (5 Cols) */}
         <div className="lg:col-span-5 space-y-4 flex flex-col justify-between">
           <div className="space-y-2">
-            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">
-              Collage Stage Preview
-            </span>
-            <div className="relative rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-950/5 dark:bg-gray-950/40 p-4 min-h-[300px] flex items-center justify-center overflow-hidden checkerboard">
-              {photos.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
-                  {photos.slice(0, 4).map((p, i) => (
-                    <img
-                      key={p.id}
-                      src={p.url}
-                      alt={`Thumb ${i}`}
-                      className="w-full h-24 object-cover rounded-xl shadow-xs border border-gray-300 dark:border-gray-700"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-gray-400">Add photos to preview grid stage</p>
-              )}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">
+                Collage Stage Preview
+              </span>
+              <span className="text-[11px] font-mono text-gray-500 dark:text-gray-400">
+                {LAYOUT_PRESETS.find((p) => p.id === layout)?.name} ({aspectRatio})
+              </span>
+            </div>
+
+            <div className="relative rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-950/5 dark:bg-gray-950/40 p-4 min-h-[320px] flex items-center justify-center overflow-hidden checkerboard">
+              {(() => {
+                const previewCanvasW = 1000;
+                let previewCanvasH = 1000;
+                if (aspectRatio === '4:3') previewCanvasH = 750;
+                else if (aspectRatio === '16:9') previewCanvasH = 562.5;
+                else if (aspectRatio === '9:16') previewCanvasH = 1777.78;
+                else if (aspectRatio === '3:2') previewCanvasH = 666.67;
+
+                const aspectClasses: Record<string, string> = {
+                  '1:1': 'aspect-square max-w-[280px]',
+                  '4:3': 'aspect-[4/3] max-w-[320px]',
+                  '16:9': 'aspect-[16/9] max-w-[340px]',
+                  '9:16': 'aspect-[9/16] max-w-[200px]',
+                  '3:2': 'aspect-[3/2] max-w-[320px]',
+                };
+
+                const previewCells = computeCollageCells(layout, previewCanvasW, previewCanvasH, gap, padding);
+
+                return (
+                  <div
+                    className={`relative w-full ${aspectClasses[aspectRatio] || 'aspect-square max-w-[280px]'} mx-auto shadow-md rounded-xl overflow-hidden transition-all duration-200 border border-gray-300 dark:border-gray-700`}
+                    style={{ backgroundColor: bgColor === 'transparent' ? 'transparent' : bgColor }}
+                  >
+                    {previewCells.map((cell, idx) => {
+                      const photo = photos[idx];
+                      const leftPct = (cell.x / previewCanvasW) * 100;
+                      const topPct = (cell.y / previewCanvasH) * 100;
+                      const widthPct = (cell.width / previewCanvasW) * 100;
+                      const heightPct = (cell.height / previewCanvasH) * 100;
+                      const borderRadiusPct = (borderRadius / previewCanvasW) * 100;
+
+                      return (
+                        <div
+                          key={idx}
+                          className="absolute overflow-hidden flex items-center justify-center transition-all duration-150"
+                          style={{
+                            left: `${leftPct}%`,
+                            top: `${topPct}%`,
+                            width: `${widthPct}%`,
+                            height: `${heightPct}%`,
+                            borderRadius: `${borderRadiusPct}%`,
+                          }}
+                        >
+                          {photo ? (
+                            <img
+                              src={photo.url}
+                              alt={photo.name}
+                              className={`w-full h-full ${fitMode === 'cover' ? 'object-cover' : 'object-contain'}`}
+                            />
+                          ) : (
+                            <div className="w-full h-full border-2 border-dashed border-gray-400/50 dark:border-gray-500/50 bg-gray-500/10 flex flex-col items-center justify-center p-1 text-center select-none rounded-[inherit]">
+                              <ImageIcon className="w-4 h-4 text-gray-400/70 mb-0.5" />
+                              <span className="text-[10px] font-semibold text-gray-400/80">Slot {idx + 1}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
