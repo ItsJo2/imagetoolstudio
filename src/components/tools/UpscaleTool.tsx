@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useImageStore } from '../../store/imageStore';
 import { upscaleImage, downloadBlob, ProcessedResult } from '../../lib/imageUtils';
 import { SendToMenu } from '../shared/SendToMenu';
+import { BeforeAfterSlider } from '../shared/BeforeAfterSlider';
 import { Sparkles, Zap, Download, RefreshCw, Check, ArrowRight, Sliders } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,7 +14,6 @@ export const UpscaleTool: React.FC = () => {
   const [format, setFormat] = useState<string>('png');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [result, setResult] = useState<ProcessedResult | null>(null);
-  const [sliderPos, setSliderPos] = useState<number>(50); // percentage for comparison slider
 
   if (!url || !file || !origWidth || !origHeight) return null;
 
@@ -206,43 +206,13 @@ export const UpscaleTool: React.FC = () => {
             </div>
           </div>
 
-          {/* Side-by-side comparison slider */}
-          <div className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 checkerboard h-64 select-none">
-            {/* Upscaled Background */}
-            <img
-              src={result.url}
-              alt="Upscaled"
-              className="absolute inset-0 w-full h-full object-contain"
-            />
-            {/* Original Overlay clipped by slider */}
-            <div
-              className="absolute inset-y-0 left-0 overflow-hidden border-r-2 border-white shadow-xl"
-              style={{ width: `${sliderPos}%` }}
-            >
-              <img
-                src={url}
-                alt="Original"
-                className="absolute inset-0 max-w-none h-full object-contain"
-                style={{ width: '100%' }}
-              />
-              <span className="absolute top-2 left-2 bg-black/70 text-white text-[10px] font-medium px-2 py-0.5 rounded">
-                Original ({origWidth}×{origHeight})
-              </span>
-            </div>
-            <span className="absolute top-2 right-2 bg-blue-600/90 text-white text-[10px] font-medium px-2 py-0.5 rounded">
-              Upscaled {scaleFactor}x ({result.width}×{result.height})
-            </span>
-
-            {/* Slider Range Control overlay */}
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={sliderPos}
-              onChange={(e) => setSliderPos(Number(e.target.value))}
-              className="absolute inset-0 opacity-0 cursor-ew-resize w-full h-full"
-            />
-          </div>
+          {/* Side-by-side / Split comparison slider */}
+          <BeforeAfterSlider
+            originalUrl={url}
+            processedUrl={result.url}
+            originalLabel={`Original (${origWidth}×${origHeight})`}
+            processedLabel={`Upscaled ${scaleFactor}x (${result.width}×${result.height})`}
+          />
 
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
             Drag across image above to compare Original vs Upscaled detail
