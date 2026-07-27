@@ -22,6 +22,9 @@ import {
   Palette,
   Move,
   Grid,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -65,6 +68,7 @@ export const AnnotateTool: React.FC = () => {
   const [textInput, setTextInput] = useState<string>('Bug Report');
   const [badgeCounter, setBadgeCounter] = useState<number>(1);
   const [blurIntensity, setBlurIntensity] = useState<number>(12); // Pixelate block size or blur radius
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
 
   const [annotations, setAnnotations] = useState<AnnotationObject[]>([]);
   const [undoStack, setUndoStack] = useState<AnnotationObject[][]>([]);
@@ -642,6 +646,39 @@ export const AnnotateTool: React.FC = () => {
             >
               <RotateCcw className="w-3.5 h-3.5" /> Clear
             </button>
+
+            {/* Zoom Controls */}
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 ml-1">
+              <button
+                type="button"
+                onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
+                disabled={zoomLevel <= 0.5}
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-xs font-mono font-semibold px-1 text-gray-700 dark:text-gray-300 min-w-[3rem] text-center">
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
+                disabled={zoomLevel >= 3}
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setZoomLevel(1)}
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 cursor-pointer border-l border-gray-300 dark:border-gray-600 ml-0.5 pl-1"
+                title="Fit to Screen"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -759,14 +796,23 @@ export const AnnotateTool: React.FC = () => {
         />
       ) : (
         <div className="space-y-4">
-          <div className="bg-gray-900/90 rounded-2xl border border-gray-800 p-4 flex items-center justify-center overflow-auto max-h-[70vh] shadow-inner checkerboard relative">
+          <div className="bg-gray-900/90 rounded-2xl border border-gray-800 p-4 flex items-center justify-center overflow-auto min-h-[300px] max-h-[65vh] shadow-inner checkerboard relative">
             <canvas
               ref={canvasRef}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              className="max-w-full h-auto object-contain cursor-crosshair rounded-lg shadow-lg border border-gray-700"
+              style={
+                zoomLevel > 1
+                  ? { transform: `scale(${zoomLevel})`, transformOrigin: 'center center', transition: 'transform 0.15s ease' }
+                  : { transition: 'transform 0.15s ease' }
+              }
+              className={
+                zoomLevel > 1
+                  ? "cursor-crosshair rounded-lg shadow-lg border border-gray-700"
+                  : "max-w-full max-h-[calc(65vh-2.5rem)] w-auto h-auto object-contain cursor-crosshair rounded-lg shadow-lg border border-gray-700"
+              }
             />
           </div>
 
