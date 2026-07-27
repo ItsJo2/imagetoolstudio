@@ -4,7 +4,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { useImageStore } from '../../store/imageStore';
 import { getCroppedImg, downloadBlob, ProcessedResult } from '../../lib/imageUtils';
 import { SendToMenu } from '../shared/SendToMenu';
-import { Crop as CropIcon, RotateCcw, RotateCw, FlipHorizontal, FlipVertical, Download, ArrowRight, RefreshCw, Check } from 'lucide-react';
+import { Crop as CropIcon, RotateCcw, RotateCw, FlipHorizontal, FlipVertical, Download, ArrowRight, RefreshCw, Check, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ASPECT_PRESETS = [
@@ -24,6 +24,7 @@ export const CropTool: React.FC = () => {
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [aspect, setAspect] = useState<number | undefined>(undefined);
   const [rotation, setRotation] = useState<number>(0);
+  const [zoom, setZoom] = useState<number>(1);
   const [flip, setFlip] = useState<{ horizontal: boolean; vertical: boolean }>({
     horizontal: false,
     vertical: false,
@@ -146,69 +147,104 @@ export const CropTool: React.FC = () => {
         </div>
       </div>
 
-      {/* Rotation & Flip Controls */}
-      <div className="flex flex-wrap items-center gap-3 pt-2">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">
-          Transform:
-        </span>
-        <button
-          type="button"
-          onClick={() => {
-            setRotation((r) => (r - 90) % 360);
-            setResult(null);
-          }}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 transition-colors cursor-pointer"
-        >
-          <RotateCcw className="w-3.5 h-3.5" /> -90°
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setRotation((r) => (r + 90) % 360);
-            setResult(null);
-          }}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 transition-colors cursor-pointer"
-        >
-          <RotateCw className="w-3.5 h-3.5" /> +90°
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setFlip((f) => ({ ...f, horizontal: !f.horizontal }));
-            setResult(null);
-          }}
-          className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-            flip.horizontal
-              ? 'bg-blue-50 dark:bg-blue-950 text-blue-600 border-blue-500'
-              : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100'
-          }`}
-        >
-          <FlipHorizontal className="w-3.5 h-3.5" /> Flip Horiz
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setFlip((f) => ({ ...f, vertical: !f.vertical }));
-            setResult(null);
-          }}
-          className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-            flip.vertical
-              ? 'bg-blue-50 dark:bg-blue-950 text-blue-600 border-blue-500'
-              : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100'
-          }`}
-        >
-          <FlipVertical className="w-3.5 h-3.5" /> Flip Vert
-        </button>
+      {/* Rotation & Flip & Zoom Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-1">
+            Transform:
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setRotation((r) => (r - 90) % 360);
+              setResult(null);
+            }}
+            className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> -90°
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setRotation((r) => (r + 90) % 360);
+              setResult(null);
+            }}
+            className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <RotateCw className="w-3.5 h-3.5" /> +90°
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFlip((f) => ({ ...f, horizontal: !f.horizontal }));
+              setResult(null);
+            }}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              flip.horizontal
+                ? 'bg-blue-50 dark:bg-blue-950 text-blue-600 border-blue-500'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100'
+            }`}
+          >
+            <FlipHorizontal className="w-3.5 h-3.5" /> Flip Horiz
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFlip((f) => ({ ...f, vertical: !f.vertical }));
+              setResult(null);
+            }}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              flip.vertical
+                ? 'bg-blue-50 dark:bg-blue-950 text-blue-600 border-blue-500'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100'
+            }`}
+          >
+            <FlipVertical className="w-3.5 h-3.5" /> Flip Vert
+          </button>
+        </div>
+
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}
+            disabled={zoom <= 0.5}
+            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <span className="text-xs font-mono font-semibold px-1 text-gray-700 dark:text-gray-300 min-w-[3.5rem] text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={() => setZoom((z) => Math.min(3, z + 0.25))}
+            disabled={zoom >= 3}
+            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 cursor-pointer"
+            title="Zoom In"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoom(1)}
+            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 cursor-pointer border-l border-gray-300 dark:border-gray-600 ml-0.5 pl-1.5"
+            title="Fit to Screen"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Crop Workspace Stage */}
-      <div className="flex justify-center items-center checkerboard p-4 rounded-xl border border-gray-200 dark:border-gray-800 overflow-auto max-h-[480px]">
+      <div className="flex justify-center items-center checkerboard p-4 rounded-xl border border-gray-200 dark:border-gray-800 overflow-auto min-h-[300px] max-h-[60vh] sm:max-h-[480px]">
         <ReactCrop
           crop={crop}
           onChange={(_, percentCrop) => setCrop(percentCrop)}
           onComplete={(c) => setCompletedCrop(c)}
           aspect={aspect}
-          className="max-w-full"
+          className="max-w-full max-h-full"
         >
           <img
             ref={imgRef}
@@ -216,10 +252,16 @@ export const CropTool: React.FC = () => {
             alt="Crop area"
             onLoad={onImageLoad}
             style={{
-              transform: `scaleX(${flip.horizontal ? -1 : 1}) scaleY(${flip.vertical ? -1 : 1}) rotate(${rotation}deg)`,
+              transform: `scaleX(${flip.horizontal ? -1 : 1}) scaleY(${flip.vertical ? -1 : 1}) rotate(${rotation}deg) scale(${zoom})`,
               transition: 'transform 0.2s ease',
             }}
-            className="max-h-[400px] w-auto object-contain rounded"
+            className={
+              zoom > 1
+                ? 'max-w-none object-contain rounded'
+                : Math.abs(rotation % 180) === 90
+                ? 'max-h-[calc(40vh-2rem)] sm:max-h-[300px] max-w-[calc(40vh-2rem)] sm:max-w-[300px] w-auto h-auto object-contain rounded'
+                : 'max-h-[calc(55vh-2rem)] sm:max-h-[420px] max-w-full w-auto h-auto object-contain rounded'
+            }
           />
         </ReactCrop>
       </div>
