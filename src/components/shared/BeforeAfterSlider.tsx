@@ -19,7 +19,22 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
   const [sliderPosition, setSliderPosition] = useState<number>(50); // percentage 0 - 100
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'slider' | 'side-by-side'>('slider');
+  const [containerWidth, setContainerWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [viewMode]);
 
   const handleMove = useCallback(
     (clientX: number) => {
@@ -146,15 +161,14 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
             className="absolute inset-0 overflow-hidden pointer-events-none"
             style={{ width: `${sliderPosition}%` }}
           >
-            <div className="relative w-full h-full" style={{ width: containerRef.current?.offsetWidth || '100%' }}>
+            <div
+              className="relative h-full"
+              style={{ width: containerWidth ? `${containerWidth}px` : '100%' }}
+            >
               <img
                 src={originalUrl}
                 alt={originalLabel}
                 className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                style={{
-                  width: containerRef.current ? `${containerRef.current.offsetWidth}px` : '100%',
-                  maxWidth: 'none',
-                }}
               />
             </div>
           </div>
