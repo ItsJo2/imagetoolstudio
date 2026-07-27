@@ -1281,7 +1281,7 @@ export async function generateCollageGrid(
 
   // Render each cell
   cellBounds.forEach((cell, idx) => {
-    const img = loadedImages[idx % loadedImages.length];
+    const img = loadedImages[idx] || null;
     if (!img) return;
 
     ctx.save();
