@@ -1,0 +1,6 @@
+{
+  "name": "Image Toolkit Studio",
+  "description": "A browser-based client-side image processing toolkit for cropping, resizing, format conversion, and high-fidelity upscaling.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
