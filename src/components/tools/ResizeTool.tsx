@@ -307,3 +307,5 @@ export const ResizeTool: React.FC = () => {
     </div>
   );
 };
+
+export { ResizeBatchTool } from './ResizeBatchTool';

@@ -119,8 +119,10 @@ export async function convertImageFormat(
   });
 }
 
+export type ResizeFitMode = 'stretch' | 'cover' | 'contain';
+
 /**
- * Resizes an image to specified dimensions with optional aspect ratio constraint.
+ * Resizes an image to specified dimensions with optional aspect ratio constraint and fit modes.
  */
 export async function resizeImage(
   imageUrl: string,
@@ -130,7 +132,9 @@ export async function resizeImage(
   quality: number = 0.92,
   originalFilename: string = 'image',
   smoothing: boolean = true,
-  smoothingQuality: ImageSmoothingQuality = 'high'
+  smoothingQuality: ImageSmoothingQuality = 'high',
+  fitMode: ResizeFitMode = 'stretch',
+  backgroundColor: string = 'transparent'
 ): Promise<ProcessedResult> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -152,13 +156,49 @@ export async function resizeImage(
         ctx.imageSmoothingQuality = smoothingQuality;
       }
 
-      const mimeType = format === 'jpg' || format === 'jpeg' ? 'image/jpeg' : `image/${format}`;
-      if (mimeType === 'image/jpeg') {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, targetWidth, targetHeight);
+      const imgW = img.naturalWidth || img.width;
+      const imgH = img.naturalHeight || img.height;
+
+      let drawX = 0;
+      let drawY = 0;
+      let drawW = targetWidth;
+      let drawH = targetHeight;
+
+      if (fitMode === 'cover') {
+        // Crop to Fill: scales and center-crops the image to exactly fill the target size with no distortion
+        const scale = Math.max(targetWidth / imgW, targetHeight / imgH);
+        drawW = imgW * scale;
+        drawH = imgH * scale;
+        drawX = (targetWidth - drawW) / 2;
+        drawY = (targetHeight - drawH) / 2;
+      } else if (fitMode === 'contain') {
+        // Fit Inside (add padding): scales the image to fit entirely inside target size with no distortion, blank space around it
+        const scale = Math.min(targetWidth / imgW, targetHeight / imgH);
+        drawW = imgW * scale;
+        drawH = imgH * scale;
+        drawX = (targetWidth - drawW) / 2;
+        drawY = (targetHeight - drawH) / 2;
       }
 
-      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      const mimeType = format === 'jpg' || format === 'jpeg' ? 'image/jpeg' : `image/${format}`;
+      if (mimeType === 'image/jpeg') {
+        ctx.fillStyle = backgroundColor && backgroundColor !== 'transparent' ? backgroundColor : '#ffffff';
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+      } else if (backgroundColor && backgroundColor !== 'transparent') {
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+      } else {
+        ctx.clearRect(0, 0, targetWidth, targetHeight);
+      }
+
+      ctx.save();
+      // Clip to canvas boundary so 'cover' (Crop to Fill) edges are cleanly trimmed
+      ctx.beginPath();
+      ctx.rect(0, 0, targetWidth, targetHeight);
+      ctx.clip();
+
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      ctx.restore();
 
       canvas.toBlob(
         (blob) => {

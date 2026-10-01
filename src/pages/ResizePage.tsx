@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useImageStore } from '../store/imageStore';
 import { ResizeTool } from '../components/tools/ResizeTool';
+import { ResizeBatchTool } from '../components/tools/ResizeBatchTool';
 import { Dropzone } from '../components/shared/Dropzone';
 import { SEO } from '../components/shared/SEO';
-import { Maximize2, X } from 'lucide-react';
+import { Maximize2, X, Layers, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function ResizePage() {
+  const [activeTab, setActiveTab] = useState<'single' | 'batch'>('single');
   const { file, url, width, height, format, setImage, clearImage } = useImageStore();
 
   const handleDrop = async (acceptedFiles: File[]) => {
@@ -38,7 +40,36 @@ export function ResizePage() {
         </p>
       </div>
 
-      {!url ? (
+      {/* Mode Switcher Tabs */}
+      <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-3 overflow-x-auto no-scrollbar">
+        <button
+          type="button"
+          onClick={() => setActiveTab('single')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'single'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" /> Single Image Resizer
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('batch')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'batch'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+          }`}
+        >
+          <Layers className="w-4 h-4" /> Batch Resizer (Up to 10 Images)
+        </button>
+      </div>
+
+      {activeTab === 'batch' ? (
+        <ResizeBatchTool />
+      ) : !url ? (
         <div className="space-y-8 my-4">
           <Dropzone onDrop={handleDrop} className="max-w-2xl mx-auto shadow-sm" />
 
